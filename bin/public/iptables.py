@@ -426,6 +426,33 @@ def add_mysql_chain():
   iptables("-A mysql_output -p TCP -m multiport -d " + config.general.get_mysql_primary_master_ip()   + " --dports 3306 -j allowed_tcp")
   iptables("-A mysql_output -p TCP -m multiport -d " + config.general.get_mysql_secondary_master_ip() + " --dports 3306 -j allowed_tcp")
 
+
+def del_freeradius_chain():
+  app.print_verbose("Delete iptables chain for FreeRadius")
+  iptables("-D syco_input  -p ALL -j freeradius_input", general.X_OUTPUT_CMD)
+  iptables("-F freeradius_input", general.X_OUTPUT_CMD)
+  iptables("-X freeradius_input", general.X_OUTPUT_CMD)
+
+  iptables("-D syco_output -p ALL -j freeradius_output", general.X_OUTPUT_CMD)
+  iptables("-F freeradius_output", general.X_OUTPUT_CMD)
+  iptables("-X freeradius_output", general.X_OUTPUT_CMD)
+
+def add_freeradius_chain():
+  del_freeradius_chain()
+
+  if (not os.path.exists('/etc/init.d/radiusd')):
+    return
+
+  app.print_verbose("Add iptables chain for FreeRadius")
+  iptables("-N freeradius_input")
+  iptables("-N freeradius_output")
+  iptables("-A syco_input  -p ALL -j freeradius_input")
+  iptables("-A syco_output -p ALL -j freeradius_output")
+
+  iptables("-A freeradius_input -p TCP -m multiport --dports 1812,1813 -j allowed_udp")
+
+
+
 def del_httpd_chain():
   app.print_verbose("Delete iptables chain for httpd")
   iptables("-D syco_input  -p ALL -j httpd_input", general.X_OUTPUT_CMD)
@@ -435,6 +462,9 @@ def del_httpd_chain():
   iptables("-D syco_output  -p ALL -j httpd_output", general.X_OUTPUT_CMD)
   iptables("-F httpd_output", general.X_OUTPUT_CMD)
   iptables("-X httpd_output", general.X_OUTPUT_CMD)
+
+
+
 
 def add_httpd_chain():
   del_httpd_chain()
