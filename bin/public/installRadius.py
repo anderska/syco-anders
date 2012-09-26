@@ -49,7 +49,7 @@ def install_freeradius(args):
 
   # Install the mysql-server packages.
   if (not os.access("/usr/sbin/radiusd", os.W_OK|os.X_OK)):
-    x("yum -y install freeradius-mysql")
+    x("yum -y install freeradius-mysql freeradius-utils")
 
     x("/sbin/chkconfig radiusd on ")
     if (not os.access("/usr/sbin/radiusd", os.F_OK)):
@@ -58,22 +58,28 @@ def install_freeradius(args):
   # Configure iptables
   iptables.add_freeradius_chain()
   iptables.save()
-  #mysql_exec('DROP database radius',True)
   app.print_verbose("Creating database")
-  x("cat %s/var/freeradius/schema.sql | mysql -uroot -p%s" %(app.SYCO_PATH, app.get_mysql_root_password()) )
+  mysql_exec("CREATE DATABASE radius",True)
+  x("cat /etc/raddb/sql/mysql/schema.sql | mysql -uroot -p%s radius" %(app.get_mysql_root_password()) )
  
+  mysql_exec("INSERT INTO radius.radcheck VALUES('','test','SHA-Password',':=','e727d1464ae12436e899a726da5b2f11d8381b26')",True)
   mysql_exec("GRANT SELECT ON radius.* TO 'production'@'localhost'",True)
   mysql_exec("GRANT ALL on radius.radacct TO 'production'@'localhost'",True)
   mysql_exec("GRANT ALL on radius.radpostauth TO 'production'@'localhost'",True)
   
   app.print_verbose("Copying config")
-  x("cp %s/var/freeradius/radiusd.conf /etc/raddb/" % app.SYCO_PATH )
-  x("cp %s/var/freeradius/default /etc/raddb/sites-available/" % app.SYCO_PATH )
-  x("cp %s/var/freeradius/sql.conf /etc/raddb/" % app.SYCO_PATH )
-  sqlconf = scOpen("/etc/raddb/sql.conf")
-  sqlconf.replace("${mysql_user}",            "production")
-  sqlconf.replace("${mysql_pass}",            app.get_mysql_production_password())
   
+  sqlconf = scOpen("/etc/raddb/sql.conf")
+  sqlconf.replace("\"localhost\"",config.general.get_mysql_primary_master_ip())
+  sqlconf.replace("\.*login =.*","    login=\"production\"" )
+  sqlconf.replace("\"radpass\"","\"%s\"" % app.get_mysql_production_password())
+  
+  radbconf = scOpen("/etc/raddb/radiusd.conf")
+
+  radbconf.replace(".*[#].*$INCLUDE sql.conf.*",     "         $INCLUDE sql.conf")
+  
+  sitesConf = scOpen("/etc/raddb/sites-enabled/default")
+  sitesConf.replace("^[#].*sql$","      sql")
   version_obj.mark_executed()
 
 def uninstall_freeradius(args):
