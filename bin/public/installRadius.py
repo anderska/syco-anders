@@ -109,7 +109,6 @@ def install_freeradius(args):
   mysql_exec("CREATE DATABASE radius",True)
   x("cat /etc/raddb/sql/mysql/schema.sql | mysql -uroot -p%s radius" %(app.get_mysql_root_password()) )
  
-  mysql_exec("INSERT INTO radius.radcheck VALUES('','test','SHA-Password',':=','e727d1464ae12436e899a726da5b2f11d8381b26')",True)
   mysql_exec("GRANT SELECT ON radius.* TO 'production'@'localhost'",True)
   mysql_exec("GRANT ALL on radius.radacct TO 'production'@'localhost'",True)
   mysql_exec("GRANT ALL on radius.radpostauth TO 'production'@'localhost'",True)
