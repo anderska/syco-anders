@@ -53,7 +53,7 @@ def add_freeradius_user(args):
   username=args[1]
   password=args[2]
   mysql_exec("INSERT INTO radius.radcheck VALUES('','%s','SHA-Password',':=',SHA('%s'))" %(username,password),True)
-  
+  mysql_exec("INSERT INTO radius.radcheck VALUES('','%s','Expiration',':=',DATE_FORMAT(DATE_ADD(NOW(),INTERVAL 90 DAY),'%%d %%M %%Y %%H:%%i'))" %username,True)
 def delete_freeradius_user(args):
   '''
    Dlete freeradius user from the mysql database.
@@ -81,7 +81,7 @@ def change_freeradius_user(args):
   username=args[1]
   password=args[2]
   mysql_exec("UPDATE radius.radcheck SET value=SHA('%s') WHERE attribute='SHA-Password' AND username='%s'" %(password,username),True)
-  
+  mysql_exec("UPDATE radius.radcheck SET value=DATE_FORMAT(DATE_ADD(NOW(),INTERVAL 90 DAY),'%%d %%M %%Y %%H:%%i') WHERE attribute='Expiration' AND username='%s'" %username,True)
 def install_freeradius(args):
   '''
   Install and configure the mysql-server on the local host.
