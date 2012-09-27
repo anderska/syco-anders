@@ -34,7 +34,54 @@ SCRIPT_VERSION = 1
 def build_commands(commands):
   commands.add("install-radius",             install_freeradius, help="Install FreeRadius server on the current server.")
   commands.add("uninstall-radius",           uninstall_freeradius,           help="Uninstall Freeradius server on the current server.")
+  commands.add("radius-adduser",             add_freeradius_user, "[username, password]", help="Add a radius user.")
+  commands.add("radius-deluser",             delete_freeradius_user, "[username]", help="Delete a radius user.")
+  commands.add("radius-passwd",             change_freeradius_user, "[username, password]", help="Change radius user password.")
 
+
+
+def add_freeradius_user(args):
+  '''
+   Add freeradius user into the mysql database.
+
+  '''
+  app.print_verbose("Add radius user version: %d" % SCRIPT_VERSION)
+
+  if (len(args) != 3):
+    raise Exception("syco radius-adduser [username] [password]")
+
+  username=args[1]
+  password=args[2]
+  mysql_exec("INSERT INTO radius.radcheck VALUES('','%s','SHA-Password',':=',SHA('%s'))" %(username,password),True)
+  
+def delete_freeradius_user(args):
+  '''
+   Dlete freeradius user from the mysql database.
+
+  '''
+  app.print_verbose("Delete radius user version: %d" % SCRIPT_VERSION)
+
+  if (len(args) != 2):
+    raise Exception("syco radius-deluser [username]")
+
+  username=args[1]
+  mysql_exec("DELETE FROM radius.radcheck WHERE username='%s'" % username,True)
+
+
+def change_freeradius_user(args):
+  '''
+   Change freeradius user password in the mysql database.
+
+  '''
+  app.print_verbose("Change radius user password version: %d" % SCRIPT_VERSION)
+
+  if (len(args) != 3):
+    raise Exception("syco radius-passwd [username] [password]")
+
+  username=args[1]
+  password=args[2]
+  mysql_exec("UPDATE radius.radcheck SET value=SHA('%s') WHERE attribute='SHA-Password' AND username='%s'" %(password,username),True)
+  
 def install_freeradius(args):
   '''
   Install and configure the mysql-server on the local host.
