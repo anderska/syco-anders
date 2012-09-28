@@ -34,6 +34,9 @@ SCRIPT_VERSION = 1
 def build_commands(commands):
   commands.add("install-radius",             install_freeradius, help="Install FreeRadius server on the current server.")
   commands.add("uninstall-radius",           uninstall_freeradius,           help="Uninstall Freeradius server on the current server.")
+  commands.add("install-radius-database",           install_freeradius_database,           help="Install Freeradius database on mysql server.")
+  commands.add("uninstall-radius-database",           uninstall_freeradius_database,           help="Uninstall Freeradius database on mysql server.")
+
   commands.add("radius-adduser",             add_freeradius_user, "[username, password]", help="Add a radius user.")
   commands.add("radius-deluser",             delete_freeradius_user, "[username]", help="Delete a radius user.")
   commands.add("radius-passwd",             change_freeradius_user, "[username, password]", help="Change radius user password.")
@@ -105,16 +108,12 @@ def install_freeradius(args):
   # Configure iptables
   iptables.add_freeradius_chain()
   iptables.save()
-  app.print_verbose("Creating database")
-  mysql_exec("CREATE DATABASE radius",True)
-  x("cat /etc/raddb/sql/mysql/schema.sql | mysql -uroot -p%s radius" %(app.get_mysql_root_password()) )
- 
-  mysql_exec("GRANT SELECT ON radius.* TO 'production'@'localhost'",True)
-  mysql_exec("GRANT ALL on radius.radacct TO 'production'@'localhost'",True)
-  mysql_exec("GRANT ALL on radius.radpostauth TO 'production'@'localhost'",True)
+  
   
   app.print_verbose("Copying config")
   
+ 
+
   sqlconf = scOpen("/etc/raddb/sql.conf")
   sqlconf.replace("\"localhost\"",config.general.get_mysql_primary_master_ip())
   sqlconf.replace("\.*login =.*","    login=\"production\"" )
@@ -139,12 +138,29 @@ def uninstall_freeradius(args):
   
   x("rm -rf /etc/raddb")
 
-  mysql_exec('DROP database radius',True)
 
   version_obj = version.Version("InstallFreeRadius", SCRIPT_VERSION)
   version_obj.mark_uninstalled()
 
 
+def install_freeradius_database(self):
+  db_ret = mysql_exec("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'radius'",True)
+  if ( db_ret.strip() == "" ):
+    app.print_verbose("No database, should install database...")
+    app.print_verbose("Creating database")
+    mysql_exec("CREATE DATABASE radius",True)
+    x("cat /etc/raddb/sql/mysql/schema.sql | mysql -uroot -p%s radius" %(app.get_mysql_root_password()) )
+ 
+    mysql_exec("GRANT SELECT ON radius.* TO 'production'@'localhost'",True)
+    mysql_exec("GRANT ALL on radius.radacct TO 'production'@'localhost'",True)
+    mysql_exec("GRANT ALL on radius.radpostauth TO 'production'@'localhost'",True)
+  else:
+    app.print_verbose("Database already exists")
+    
+  
+def uninstall_freeradius_database(self):
+	mysql_exec('DROP database radius',True)
+	
 
 def mysql_exec(command, with_user=False, host="127.0.0.1"):
   '''
