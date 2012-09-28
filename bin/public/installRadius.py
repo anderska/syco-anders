@@ -40,6 +40,7 @@ def build_commands(commands):
   commands.add("radius-adduser",             add_freeradius_user, "[username, password]", help="Add a radius user.")
   commands.add("radius-deluser",             delete_freeradius_user, "[username]", help="Delete a radius user.")
   commands.add("radius-passwd",             change_freeradius_user, "[username, password]", help="Change radius user password.")
+  commands.add("radius-addhost",             add_radius_host, "[hostip]", help="Add a freeradius host to mysql database")
 
 
 
@@ -116,8 +117,8 @@ def install_freeradius(args):
 
   sqlconf = scOpen("/etc/raddb/sql.conf")
   sqlconf.replace("\"localhost\"",config.general.get_mysql_primary_master_ip())
-  sqlconf.replace("\.*login =.*","    login=\"production\"" )
-  sqlconf.replace("\"radpass\"","\"%s\"" % app.get_mysql_production_password())
+  sqlconf.replace("\.*login =.*","    login=\"radius\"" )
+  sqlconf.replace("\"radpass\"","\"%s\"" % app.get_mysql_radius_password())
   
   radbconf = scOpen("/etc/raddb/radiusd.conf")
 
@@ -143,7 +144,7 @@ def uninstall_freeradius(args):
   version_obj.mark_uninstalled()
 
 
-def install_freeradius_database(self):
+def install_freeradius_database(args):
   db_ret = mysql_exec("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'radius'",True)
   if ( db_ret.strip() == "" ):
     app.print_verbose("No database, should install database...")
@@ -151,9 +152,9 @@ def install_freeradius_database(self):
     mysql_exec("CREATE DATABASE radius",True)
     x("cat /etc/raddb/sql/mysql/schema.sql | mysql -uroot -p%s radius" %(app.get_mysql_root_password()) )
  
-    mysql_exec("GRANT SELECT ON radius.* TO 'production'@'localhost'",True)
-    mysql_exec("GRANT ALL on radius.radacct TO 'production'@'localhost'",True)
-    mysql_exec("GRANT ALL on radius.radpostauth TO 'production'@'localhost'",True)
+    #mysql_exec("GRANT SELECT ON radius.* TO 'production'@'localhost'",True)
+    #mysql_exec("GRANT ALL on radius.radacct TO 'production'@'localhost'",True)
+    #mysql_exec("GRANT ALL on radius.radpostauth TO 'production'@'localhost'",True)
   else:
     app.print_verbose("Database already exists")
     
@@ -162,6 +163,20 @@ def uninstall_freeradius_database(self):
 	mysql_exec('DROP database radius',True)
 	
 
+def add_radius_host(args):
+  '''
+    Add fFreeradius host to mysql database.
+
+  '''
+  app.print_verbose("Add radius host version: %d" % SCRIPT_VERSION)
+
+  if (len(args) != 2):
+    raise Exception("syco radius-addhost [hostip]")
+  
+  radip = args[1]
+  mysql_exec("GRANT SELECT ON radius.* TO 'radius'@'%s' IDENTIFIED BY '%s'" % (radip,app.get_mysql_radius_password()),True)
+  mysql_exec("GRANT ALL on radius.radacct TO 'radius'@'%s' IDENTIFIED BY '%s'" % (radip,app.get_mysql_radius_password()),True)
+  mysql_exec("GRANT ALL on radius.radpostauth TO 'radius'@'%s' IDENTIFIED BY '%s'" %(radip,app.get_mysql_radius_password()),True)
 def mysql_exec(command, with_user=False, host="127.0.0.1"):
   '''
   Execute a MySQL query, through the command line mysql console.

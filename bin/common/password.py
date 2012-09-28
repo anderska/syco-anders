@@ -124,6 +124,10 @@ def get_mysql_production_password():
   '''A user password for the mysql service.'''
   return _get_password("mysql", "production")
 
+def get_mysql_radius_password():
+  '''A user password for the radius mysql service.'''
+  return _get_password("mysql", "radius")
+
 def init_mysql_passwords():
   get_mysql_root_password()
   get_mysql_integration_password()
