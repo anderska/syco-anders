@@ -122,7 +122,7 @@ __email__ = "syco@cybercow.se"
 import ConfigParser
 import os
 import re
-
+import sys
 import app
 import config
 import general
@@ -208,29 +208,39 @@ def install_dns(args):
   master = setting upp master server
   slave = setting upp slave server
   '''
-  role  =str(args[1])
+  
   '''
   Reading zone.cfg file conting
   In zone.cfg is all config options neede for setting upp DNS Server
   This file is readed and the the options are saved and used when generating new config files
   '''
-  config = ConfigParser.SafeConfigParser()
+  config_f = ConfigParser.SafeConfigParser()
   config_zone = ConfigParser.SafeConfigParser()
 
 
-  config.read(app.SYCO_PATH + 'var/dns/zone.cfg')
-  dnsrange = config.get('config', 'range')
-  forward1 = config.get('config', 'forward1')
-  forward2 = config.get('config', 'forward2')
-  ipmaster = config.get('config', 'ipmaster')
-  ipslave = config.get('config', 'ipslave')
-  localnet = config.get('config', 'localnet')
-  data_center = config.get('config', 'data_center')
+  config_f.read(app.SYCO_PATH + 'var/dns/zone.cfg')
+  dnsrange = config_f.get('config', 'range')
+  forward1 = config_f.get('config', 'forward1')
+  forward2 = config_f.get('config', 'forward2')
+  ipmaster = config_f.get('config', 'ipmaster')
+  ipslave = config_f.get('config', 'ipslave')
+  localnet = config_f.get('config', 'localnet')
+  data_center = config_f.get('config', 'data_center')
   #role =  config.get('config','role')
 
+  if len(args) == 2:
+    if(args[1] == "master"):
+      pass
+      #raise Exception("You can only enter master or slave, you entered " + args[1])
+  
   role  =str(args[1])
-  if (role != "master" or role != "slave"):
-    raise Exception("You can only enter master or slave, you entered " + role)
+  #role  =str(args[1])
+  #if (role != "master" or role != "slave"):
+  #  raise Exception("You can only enter master or slave, you entered " + role)
+
+  #Creating data dir
+  x("mkdir  /var/named/chroot/var/named/data")
+
 
   '''
   Depending if the server is an master then new rndc keys are genertaed if now old are done.
@@ -270,8 +280,8 @@ def install_dns(args):
      '''
 
 
-     for zone in config.options('zone'):
-                rzone = config.get('zone',zone)
+     for zone in config_f.options('zone'):
+                rzone = config_f.get('zone',zone)
                 config_zone.read(app.SYCO_PATH + 'var/dns/'+zone)
                 print zone
 
@@ -405,6 +415,7 @@ def install_dns(args):
   '''
   Setting upp named.conf with right settings
   '''
+
   o = open("/var/named/chroot/etc/named.conf","a") #open for append
   for line in open(app.SYCO_PATH + "var/dns/" + role + "-named.conf"):
      line = line.replace("$IPSLAVE$",ipslave)
