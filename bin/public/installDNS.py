@@ -126,6 +126,8 @@ import sys
 import app
 import config
 import general
+from general import x
+from ssh import scp_from
 
 # The version of this module, used to prevent
 # the same script version to be executed more then
@@ -138,6 +140,7 @@ def build_commands(commands):
 
   '''
   commands.add("install-dns",   install_dns,  help="Install DNS server use command 'install-dns master/slave' ")
+  commands.add("uninstall-dns",   uninstall_dns,  help="Install DNS server use command 'install-dns master/slave' ")
 
 def _copy_rndc():
     '''
@@ -208,6 +211,18 @@ def install_dns(args):
   master = setting upp master server
   slave = setting upp slave server
   '''
+
+  if len(args) == 2:
+    role = args[1]
+    if (role != "master" and role !="slave"):
+      sys.exit("use choose master ore slave server 'syco install-dns master'")
+      #raise Exception("You can only enter master or slave, you entered " + args[1])
+  else:
+    sys.exit("use choose master ore slave server 'syco install-dns master'")
+
+
+  role  =str(args[1])  
+
   
   '''
   Reading zone.cfg file conting
@@ -226,17 +241,8 @@ def install_dns(args):
   ipslave = config_f.get('config', 'ipslave')
   localnet = config_f.get('config', 'localnet')
   data_center = config_f.get('config', 'data_center')
-  #role =  config.get('config','role')
+    
 
-  if len(args) == 2:
-    if(args[1] == "master"):
-      pass
-      #raise Exception("You can only enter master or slave, you entered " + args[1])
-  
-  role  =str(args[1])
-  #role  =str(args[1])
-  #if (role != "master" or role != "slave"):
-  #  raise Exception("You can only enter master or slave, you entered " + role)
 
   #Creating data dir
   x("mkdir  /var/named/chroot/var/named/data")
@@ -256,7 +262,7 @@ def install_dns(args):
         _copy_rndc()
       else:
           os.chdir("/var/named/chroot/etc")
-          os.system("scp root@" + ipmaster + ":/var/named/chroot/etc/rndc_new.key ." )
+            scp_from(ipmaster,"/var/named/chroot/etc/rndc_new.key","/var/named/chroot/etc/")
 
 
 
@@ -319,7 +325,7 @@ def install_dns(args):
                             servers = config.get_servers()
                             for hostname in servers:
                                 o.write (hostname + "." + zone + "." + "     IN     A    " + config.host(hostname).get_back_ip() + " \n")
-                                print hostname + config.host(hostname).get_back_ip()
+                                print "INTERNAL"+hostname + config.host(hostname).get_back_ip()
 
                     else:
                          for option in config_zone.options("internal_" + zone + "_arecords"):
@@ -452,3 +458,7 @@ def install_dns(args):
   '''
   general.shell_exec("/etc/init.d/named restart")
 
+def uninstall_dns(args):
+  print "Uninstalling DNS Server"
+  x("yum erase bind bind-chroot bind-libs bind-utils caching-nameserver -y")
+  x("rm -rf /var/named")
