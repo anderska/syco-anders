@@ -451,7 +451,53 @@ def add_freeradius_chain():
 
   iptables("-A freeradius_input -p TCP -m multiport --dports 1812,1813 -j allowed_udp")
 
+def del_rsync_chain():
+  app.print_verbose("Delete iptables chain for rsync")
+  iptables("-D syco_input  -p ALL -j rsync_input", general.X_OUTPUT_CMD)
+  iptables("-F rsync_input", general.X_OUTPUT_CMD)
+  iptables("-X rsync_input", general.X_OUTPUT_CMD)
 
+  iptables("-D syco_output -p ALL -j rsync_output", general.X_OUTPUT_CMD)
+  iptables("-F rsync_output", general.X_OUTPUT_CMD)
+  iptables("-X rsync_output", general.X_OUTPUT_CMD)
+
+def add_rsync_chain():
+  del_rsync_chain()
+
+  
+  app.print_verbose("Add iptables chain for rsync")
+  iptables("-N rsync_input")
+  iptables("-N rsync_output")
+  iptables("-A syco_input  -p ALL -j rsync_input")
+  iptables("-A syco_output -p ALL -j rsync_output")
+
+  #iptables("-A rsync_output -p TCP -m multiport --dports 873 -j allowed_tcp")
+  iptables("-A rsync_output -p TCP --dport 873 -j allowed_tcp")
+
+
+
+
+def del_openvas_chain():
+  app.print_verbose("Delete iptables chain for openvas")
+  iptables("-D syco_input  -p ALL -j openvas_input", general.X_OUTPUT_CMD)
+  iptables("-F openvas_input", general.X_OUTPUT_CMD)
+  iptables("-X openvas_input", general.X_OUTPUT_CMD)
+
+  iptables("-D syco_output -p ALL -j openvas_output", general.X_OUTPUT_CMD)
+  iptables("-F openvas_output", general.X_OUTPUT_CMD)
+  iptables("-X openvas_output", general.X_OUTPUT_CMD)
+
+def add_openvas_chain():
+  del_openvas_chain()
+
+  
+  app.print_verbose("Add iptables chain for openvas")
+  iptables("-N openvas_input")
+  iptables("-N openvas_output")
+  iptables("-A syco_input  -p ALL -j openvas_input")
+  iptables("-A syco_output -p ALL -j openvas_output")
+  iptables("-A openvas_input -p TCP --dport 9392 -j allowed_tcp")
+  iptables("-A openvas_output -p ALL -j ACCEPT")
 
 def del_httpd_chain():
   app.print_verbose("Delete iptables chain for httpd")
