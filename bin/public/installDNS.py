@@ -262,7 +262,7 @@ def install_dns(args):
         _copy_rndc()
       else:
           os.chdir("/var/named/chroot/etc")
-            scp_from(ipmaster,"/var/named/chroot/etc/rndc_new.key","/var/named/chroot/etc/")
+          scp_from(ipmaster,"/var/named/chroot/etc/rndc_new.key","/var/named/chroot/etc/")
 
 
 
