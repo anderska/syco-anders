@@ -54,6 +54,10 @@ def install_openvas(args):
     raise Exception("You need to install the atomic repo first (wget -q -O - http://www.atomicorp.com/installers/atomic | sh)")
   # Install the mysql-server packages.
   
+  
+  subnet = config.general.get_subnet()
+  if not subnet:
+    raise('Need to put network.subnet in install.cfg')
   x("yum -y install sqlite")
   if (not os.access("/usr/sbin/openvassd", os.W_OK|os.X_OK)):
     x("yum -y install openvas")
@@ -88,8 +92,21 @@ def install_openvas(args):
   selinuxconf = scOpen("/etc/selinux/config")
   selinuxconf.replace("^SELINUX=.*","SELINUX=permissive")
 
-  #x("service gsad restart &")
-  #x("service gsad start")
+  #Setup default database
+  shutil.copy(app.SYCO_PATH + "var/openvas/sql_init.sql",  app.SYCO_PATH + "var/openvas/sql_init.sql.tmp")
+  
+  sqlInit = scOpen(app.SYCO_PATH + "var/openvas/sql_init.sql.tmp")
+  sqlInit.replace("${syco_hosts}",subnet)
+  sqlInit.replace("${syco_alert_email}",config.general.get_admin_email())
+  x("cat %s/var/openvas/sql_init.sql.tmp | sqlite3 /var/lib/openvas/mgr/tasks.db" % app.SYCO_PATH )
+  
+  #general.shell_exec("/etc/init.d/openvas-manager restart &> /dev/null ")
+  #general.shell_exec("/etc/init.d/openvas-administrator restart &> /dev/null")
+  #general.shell_exec("/etc/init.d/openvas-scanner restart &> /dev/null")
+  #general.shell_exec("/etc/init.d/gsad restart &> /dev/null")
+  #general.shell_exec("service gsad start")
+  x("/bin/sh "+app.SYCO_PATH + "var/openvas/restart.sh &> /dev/null ")
+  
   version_obj.mark_executed()
 
 def uninstall_openvas(args):
@@ -99,13 +116,14 @@ def uninstall_openvas(args):
   '''
   
   if (os.access("/etc/init.d/openvas-manager", os.F_OK)):
-    x("/etc/init.d/openvas-manager stop")
-    x("/etc/init.d/openvas-scanner stop")
-    #x("/etc/init.d/openvas-manager stop")
+    general.shell_exec("/etc/init.d/openvas-manager stop")
+    general.shell_exec("/etc/init.d/openvas-scanner stop")
+    general.shell_exec("/etc/init.d/gsad stop")
 
 
 
   x("yum -y remove openvas-*")
+  x("rm -rf /var/lib/openvas")
   #x("rm /etc/yum.repos.d/atomic.repo")
   iptables.del_openvas_chain()
   iptables.save()

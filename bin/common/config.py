@@ -273,6 +273,9 @@ class Config(object):
     def get_log_server_hostname(self):
       return self.get_option("log.hostname")
 
+    def get_subnet(self):
+      return self.get_option("network.subnet") 
+
   class HostConfig(SycoConfig):
     '''
     Access functions for the hosts in the install.cfg.
