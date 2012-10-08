@@ -42,6 +42,12 @@ def install_nmap(args):
 
   '''
   app.print_verbose("Install NMAP version: %d" % SCRIPT_VERSION)
+  
+  
+  subnet = config.general.get_subnet()
+  if not subnet:
+    raise('Need to put network.subnet in install.cfg')
+
   version_obj = version.Version("InstallNMAP", SCRIPT_VERSION)
   version_obj.check_executed()
 
@@ -56,8 +62,22 @@ def install_nmap(args):
       raise Exception("Couldn't install NMAP")
 
   # Configure iptables
+  x("mkdir -p /var/lib/nmap")
+  x("mkdir -p /var/lib/nmap/scans")
+  
+  shutil.copy(app.SYCO_PATH + "var/nmap/do_nmap_scan.sh",  "/var/lib/nmap/do_nmap_scan.sh")
+  x("chmod +x /var/lib/nmap/do_nmap_scan.sh")
+  nmapScanConf = scOpen("/var/lib/nmap/do_nmap_scan.sh")
+  nmapScanConf.replace("${nmap_targets}",subnet)
+  
+  
+  shutil.copy(app.SYCO_PATH + "var/nmap/nmap_cron",  "/etc/cron.weekly/nmap_cron")
+  x("chmod +x /etc/cron.weekly/nmap_cron")
+  nmapScanCron = scOpen("/etc/cron.weekly/nmap_cron")
+  nmapScanCron.replace("${alert_email}",config.general.get_admin_email())
   
   version_obj.mark_executed()
+  do_inital_nmap_scan(args)
 
 def uninstall_nmap(args):
   '''
@@ -66,8 +86,20 @@ def uninstall_nmap(args):
   '''
   
   x("yum -y remove nmap")
+  x("rm /var/lib/nmap/do_nmap_scan.sh")
+  x("rm /etc/cron.weekly/nmap_cron")
   
 
 
   version_obj = version.Version("InstallNMAP", SCRIPT_VERSION)
   version_obj.mark_uninstalled()
+
+def do_inital_nmap_scan(args):
+  app.print_verbose("Doing initial NMAP scanning")
+  subnet = config.general.get_subnet()
+  if not subnet:
+    raise('Need to put network.subnet in install.cfg')
+
+  
+  x("/usr/bin/env nmap -v -T4 -F -sV -oX /var/lib/nmap/initial_nmap.xml %s" % subnet)
+  #x("/usr/bin/env nmap %s > /tmp/initial_scan.txt" % subnet)
