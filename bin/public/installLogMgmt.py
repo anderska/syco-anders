@@ -69,6 +69,8 @@ def install_logmgmt(args):
   shutil.copy(app.SYCO_PATH + "var/logmgmt/config.php",  "/var/www/html/loganalyzer/")
   x("chown -R apache /var/www/html/loganalyzer")
   x("rm -rf /tmp/loganalyzer*")
+  shutil.copy(app.SYCO_PATH + "var/logmgmt/loganalyzer.conf",  "/etc/httpd/conf.d/")
+  x("service httpd restart")
   version_obj.mark_executed()
 def uninstall_logmgmt(args):
   '''
@@ -80,6 +82,6 @@ def uninstall_logmgmt(args):
   x("rm -rf /var/lib/logmgmt")
   x("yum -y remove php")
   x("rm -rf /var/www/html/loganalyzer")
-
+  x("rm /etc/httpd/conf.d/loganalyzer.conf")
   version_obj = version.Version("InstallLogMgmt", SCRIPT_VERSION)
   version_obj.mark_uninstalled()
