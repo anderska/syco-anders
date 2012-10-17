@@ -57,8 +57,19 @@ def install_logmgmt(args):
   logMgmtCron = scOpen("/etc/cron.daily/logmgmt_cron")
   logMgmtCron.replace("${alert_email}",config.general.get_admin_email())
   
-  version_obj.mark_executed()
+  
 
+  x("yum -y install php")
+  x("yum -y install php-mysql")
+  x("yum -y install php-gd")
+  x("cd /tmp/; wget http://download.adiscon.com/loganalyzer/loganalyzer-3.5.6.tar.gz")
+  x("cd /tmp; tar xzf loganalyzer-3.5.6.tar.gz")
+  x("cp -rp /tmp/loganalyzer-3.5.6/src /var/www/html/loganalyzer")
+  x("chown -R apache /var/www/html/loganalyzer")
+  shutil.copy(app.SYCO_PATH + "var/logmgmt/config.php",  "/var/www/html/loganalyzer/")
+  x("chown -R apache /var/www/html/loganalyzer")
+  x("rm -rf /tmp/loganalyzer*")
+  version_obj.mark_executed()
 def uninstall_logmgmt(args):
   '''
   Uninstall nmap
@@ -67,7 +78,8 @@ def uninstall_logmgmt(args):
   
   x("rm /etc/cron.daily/logmgmt_cron")
   x("rm -rf /var/lib/logmgmt")
-
+  x("yum -y remove php")
+  x("rm -rf /var/www/html/loganalyzer")
 
   version_obj = version.Version("InstallLogMgmt", SCRIPT_VERSION)
   version_obj.mark_uninstalled()
