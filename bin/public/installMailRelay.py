@@ -62,6 +62,7 @@ def install_mail_server(args):
 
   # Allow all servers on localdomain to relay through this server.
   set_config_property2("/etc/mail/access", "Connect:10.100                          RELAY")
+  x("/usr/sbin/makemap hash access < access")
 
   # Remove the loopback address restriction to accept email from the internet or intranet.
   set_config_property(
@@ -156,7 +157,7 @@ def _rebuild_sendmail_config():
   general.shell_exec("yum -y install sendmail-cf")
   os.chdir("/etc/mail")
   general.shell_exec('make')
-  general.shell_exec('service sendmail restart')
+  general.shell_exec('service sendmail start')
   general.shell_exec("yum -y remove sendmail-cf")
 
 def _test_mail():
