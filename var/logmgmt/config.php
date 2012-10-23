@@ -178,8 +178,8 @@ $CFG['Sources']['Source1']['DBTableType'] = 'monitorware';
 $CFG['Sources']['Source1']['DBType'] = DB_MYSQL;
 $CFG['Sources']['Source1']['DBServer'] = 'localhost';
 $CFG['Sources']['Source1']['DBName'] = 'syslog';
-$CFG['Sources']['Source1']['DBUser'] = 'root';
-$CFG['Sources']['Source1']['DBPassword'] = '';
+$CFG['Sources']['Source1']['DBUser'] = '${mysql_user}';
+$CFG['Sources']['Source1']['DBPassword'] = '${mysql_password}';
 $CFG['Sources']['Source1']['DBTableName'] = 'SystemEvents';
 $CFG['Sources']['Source1']['DBEnableRowCounting'] = true;
 

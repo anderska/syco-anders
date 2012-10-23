@@ -67,14 +67,28 @@ def install_logmgmt(args):
   x("cp -rp /tmp/loganalyzer-3.5.6/src /var/www/html/loganalyzer")
   x("chown -R apache /var/www/html/loganalyzer")
   shutil.copy(app.SYCO_PATH + "var/logmgmt/config.php",  "/var/www/html/loganalyzer/")
+  
+  logConfig = scOpen("/var/www/html/loganalyzer/config.php")
+  logConfig.replace("${mysql_user}","root")
+  logConfig.replace("${mysql_password}",app.get_mysql_root_password())
+  
   x("chown -R apache /var/www/html/loganalyzer")
   x("rm -rf /tmp/loganalyzer*")
-  shutil.copy(app.SYCO_PATH + "var/logmgmt/loganalyzer.conf",  "/etc/httpd/conf.d/")
   
+  
+  shutil.copy(app.SYCO_PATH + "var/logmgmt/remove_sql.sh",  "/var/lib/logmgmt/")
+  x("chmod +x /var/lib/logmgmt/remove_sql.sh")
+  logSql = scOpen("/var/lib/logmgmt/remove_sql.sh")
+  logSql.replace("${mysql_user}","root")
+  logSql.replace("${mysql_password}",app.get_mysql_root_password())
+  
+  shutil.copy(app.SYCO_PATH + "var/logmgmt/loganalyzer.conf",  "/etc/httpd/conf.d/")
   htconf = scOpen("/etc/httpd/conf.d/loganalyzer.conf")
   htconf.replace("${bind_dn}","cn=sssd,%s" % config.general.get_ldap_dn() )
   htconf.replace("${bind_password}","%s" % app.get_ldap_sssd_password() )
   htconf.replace("${ldap_url}","ldaps://%s:636/%s?uid" % (config.general.get_ldap_hostname(),config.general.get_ldap_dn()) )
+  
+  
   x("service httpd restart")
   version_obj.mark_executed()
 def uninstall_logmgmt(args):
