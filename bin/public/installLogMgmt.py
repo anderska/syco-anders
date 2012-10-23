@@ -70,6 +70,11 @@ def install_logmgmt(args):
   x("chown -R apache /var/www/html/loganalyzer")
   x("rm -rf /tmp/loganalyzer*")
   shutil.copy(app.SYCO_PATH + "var/logmgmt/loganalyzer.conf",  "/etc/httpd/conf.d/")
+  
+  htconf = scOpen("/etc/httpd/conf.d/loganalyzer.conf")
+  htconf.replace("${bind_dn}","cn=sssd,%s" % config.general.get_ldap_dn() )
+  htconf.replace("${bind_password}","%s" % app.get_ldap_sssd_password() )
+  htconf.replace("${ldap_url}","ldaps://%s:636/%s?uid" % (config.general.get_ldap_hostname(),config.general.get_ldap_dn()) )
   x("service httpd restart")
   version_obj.mark_executed()
 def uninstall_logmgmt(args):
